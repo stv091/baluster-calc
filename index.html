@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Baluster Spacing Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one working column — inputs card, big answer, to-scale drawing, marking-out table. */
+:root {
+  --bg: #f3f4f2;
+  --surface: #ffffff;
+  --ink: #1f2524;
+  --muted: #5d6764;
+  --line: #d5d9d6;
+  --accent: #b5481f;      /* carpenter's pencil red */
+  --accent-soft: #f6e3da;
+  --timber: #c9a77a;
+  --steel: #6f7b78;
+  --warn: #9a6400;
+  --warn-soft: #fbefd6;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Barlow", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a19; --surface: #1f2423; --ink: #e8ebe9; --muted: #9aa5a1; --line: #343b39;
+    --accent: #ec7a4c; --accent-soft: #3a2519; --timber: #a8875c; --steel: #8a9693;
+    --warn: #e7b04f; --warn-soft: #3a2e14; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161a19; --surface: #1f2423; --ink: #e8ebe9; --muted: #9aa5a1; --line: #343b39;
+  --accent: #ec7a4c; --accent-soft: #3a2519; --timber: #a8875c; --steel: #8a9693;
+  --warn: #e7b04f; --warn-soft: #3a2e14; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 20px; }
+header h1 { font-family: var(--f-display); font-weight: 700; font-size: 2.1rem; letter-spacing: .01em; margin: 0; line-height: 1.1; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+
+.modes { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px; gap: 4px; }
+.modes button {
+  font-family: var(--f-display); font-weight: 600; font-size: 1.05rem; letter-spacing: .03em; text-transform: uppercase;
+  border: 0; background: transparent; color: var(--muted); padding: 8px 18px; border-radius: 5px; cursor: pointer;
+}
+.modes button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.modes button:focus-visible, input:focus-visible, select:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: .85rem; color: var(--muted); }
+.input-unit { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); overflow: hidden; }
+.input-unit input, .field select {
+  flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink);
+  font-family: var(--f-num); font-size: 1.25rem; padding: 10px 12px;
+}
+.field select { border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-family: var(--f-body); font-size: 1rem; }
+.input-unit span { font-family: var(--f-num); color: var(--muted); padding: 0 12px; display: flex; align-items: center; border-left: 1px solid var(--line); font-size: .9rem; }
+.hint { font-size: .85rem; color: var(--muted); }
+.stairs-only { display: contents; }
+
+.helper { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.helper .field { flex: 1 1 140px; }
+.helper p { flex-basis: 100%; margin: 0; font-size: .9rem; color: var(--muted); }
+.btn { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; font-size: 1rem; border: 1px solid var(--ink); background: transparent; color: var(--ink); border-radius: 6px; padding: 10px 16px; cursor: pointer; }
+.btn:hover { background: var(--ink); color: var(--bg); }
+
+.answer { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr); gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.answer .big { background: var(--accent-soft); padding: 20px; border-right: 1px solid var(--line); display: grid; align-content: center; gap: 2px; }
+.eyebrow { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; font-size: .85rem; color: var(--muted); }
+.big .num { font-family: var(--f-num); font-weight: 600; font-size: 3rem; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
+.big .num small { font-size: 1.1rem; color: var(--muted); font-weight: 500; }
+.big .sub { color: var(--muted); font-size: .92rem; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.stat { padding: 14px 18px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); min-width: 0; }
+.stat:nth-child(2n) { border-right: 0; }
+.stat .v { font-family: var(--f-num); font-size: 1.3rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: .85rem; color: var(--muted); }
+.stat.hl .v { color: var(--accent); }
+
+.msg { padding: 12px 16px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-weight: 500; }
+
+.drawing { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+.drawing svg { display: block; width: 100%; height: auto; max-height: 360px; }
+
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 1.35rem; margin: 0 0 4px; letter-spacing: .01em; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; font-size: .82rem; color: var(--muted); }
+td { font-family: var(--f-num); font-size: .95rem; }
+th:first-child, td:first-child { text-align: left; }
+tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--bg) 60%, transparent); }
+.notes { color: var(--muted); font-size: .9rem; margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+
+@media (max-width: 640px) {
+  .answer { grid-template-columns: 1fr; }
+  .answer .big { border-right: 0; border-bottom: 1px solid var(--line); }
+  .big .num { font-size: 2.6rem; }
+}
+[hidden] { display: none !important; }
+body { margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Baluster Spacing Calculator</h1>
+    <p>Enter the clear distance between posts, the max gap allowed and the baluster width. It works out how many balusters you need and the equal gap between each one, with a gap at both posts.</p>
+  </header>
+
+  <div class="modes" role="group" aria-label="Balustrade type">
+    <button type="button" id="mode-level" aria-pressed="true">Level</button>
+    <button type="button" id="mode-stairs" aria-pressed="false">Stairs (raked)</button>
+  </div>
+
+  <section class="panel" aria-label="Measurements">
+    <div class="fields">
+      <div class="field">
+        <label for="span">Post to post</label>
+        <div class="input-unit"><input id="span" type="number" inputmode="decimal" min="0" step="1" value="3000"><span>mm</span></div>
+        <div class="hint">Inside face to inside face</div>
+      </div>
+      <div class="field">
+        <label for="maxgap">Max gap</label>
+        <div class="input-unit"><input id="maxgap" type="number" inputmode="decimal" min="1" step="1" value="125"><span>mm</span></div>
+        <div class="hint">NCC limit is 125 mm</div>
+      </div>
+      <div class="field">
+        <label for="width">Baluster width</label>
+        <div class="input-unit"><input id="width" type="number" inputmode="decimal" min="0" step="1" value="42"><span>mm</span></div>
+        <div class="hint">Face width, side on to the rail</div>
+      </div>
+      <div class="stairs-only" id="stairs-fields" hidden>
+        <div class="field">
+          <label for="angle">Stair angle</label>
+          <div class="input-unit"><input id="angle" type="number" inputmode="decimal" min="0" max="60" step="0.1" value="35"><span>°</span></div>
+          <div class="hint">Rail pitch from level</div>
+        </div>
+        <div class="field">
+          <label for="measured">Post to post measured</label>
+          <select id="measured">
+            <option value="rake">Along the rail (sloped)</option>
+            <option value="level">Level (plan / horizontal)</option>
+          </select>
+          <div class="hint">How you took the tape measurement</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="helper" id="angle-helper" hidden>
+      <p>Don't know the angle? Enter the stair rise and going and it will fill it in.</p>
+      <div class="field">
+        <label for="rise">Rise</label>
+        <div class="input-unit"><input id="rise" type="number" inputmode="decimal" min="0" step="1" value="180"><span>mm</span></div>
+      </div>
+      <div class="field">
+        <label for="going">Going</label>
+        <div class="input-unit"><input id="going" type="number" inputmode="decimal" min="0" step="1" value="250"><span>mm</span></div>
+      </div>
+      <button type="button" class="btn" id="use-angle">Use <span id="calc-angle">35.8</span>°</button>
+    </div>
+  </section>
+
+  <div id="error" class="msg" hidden></div>
+
+  <section class="answer" id="answer" aria-live="polite">
+    <div class="big">
+      <div class="eyebrow" id="gap-label">Gap between balusters</div>
+      <div class="num" id="out-gap">118.1<small> mm</small></div>
+      <div class="sub" id="out-gap-sub">Equal gap at each post and between every baluster</div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="drawing" aria-label="Drawing to scale">
+    <svg id="svg" viewBox="0 0 1000 220" role="img" aria-label="Balusters drawn to scale between posts"></svg>
+  </section>
+
+  <section class="panel">
+    <h2>Marking out</h2>
+    <div class="hint" id="table-hint">Measured from the inside face of the left post.</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Baluster</th><th>Left edge</th><th>Centre</th><th>Right edge</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <ul class="notes" id="notes"></ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const ids = ["span", "maxgap", "width", "angle", "measured", "rise", "going"];
+  let mode = "level";
+
+  // Restore the last values this person used (per browser only)
+  try {
+    const saved = JSON.parse(localStorage.getItem("baluster-calc") || "null");
+    if (saved) {
+      ids.forEach((k) => { if (saved[k] != null) $(k).value = saved[k]; });
+      if (saved.mode === "stairs") mode = "stairs";
+    }
+  } catch (e) {}
+
+  const fmt = (n, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toFixed(d);
+  const half = (n) => (Math.round(n * 2) / 2).toFixed(1); // nearest 0.5 mm for marking
+  const num = (id) => parseFloat($(id).value);
+
+  // Core maths: n balusters, n+1 equal gaps, every gap <= maxGap
+  function solve(L, maxGap, w) {
+    if (L <= maxGap) return { n: 0, gap: L };
+    const n = Math.ceil((L - maxGap) / (maxGap + w));
+    return { n, gap: (L - n * w) / (n + 1) };
+  }
+
+  function setMode(m) {
+    mode = m;
+    $("mode-level").setAttribute("aria-pressed", m === "level");
+    $("mode-stairs").setAttribute("aria-pressed", m === "stairs");
+    $("stairs-fields").hidden = m !== "stairs";
+    $("angle-helper").hidden = m !== "stairs";
+    update();
+  }
+
+  function stat(label, value, unit, hl) {
+    return `<div class="stat${hl ? " hl" : ""}"><div class="eyebrow">${label}</div><div class="v">${value}${unit ? `<small> ${unit}</small>` : ""}</div></div>`;
+  }
+
+  function update() {
+    try {
+      const s = { mode }; ids.forEach((k) => (s[k] = $(k).value));
+      localStorage.setItem("baluster-calc", JSON.stringify(s));
+    } catch (e) {}
+
+    const rise = num("rise"), going = num("going");
+    $("calc-angle").textContent = rise > 0 && going > 0 ? fmt(Math.atan(rise / going) * 180 / Math.PI) : "–";
+
+    const span = num("span"), maxGap = num("maxgap"), w = num("width");
+    const stairs = mode === "stairs";
+    const angle = stairs ? num("angle") : 0;
+    let err = "";
+    if (!(span > 0)) err = "Enter the post to post measurement.";
+    else if (!(maxGap > 0)) err = "Enter a max gap greater than 0.";
+    else if (!(w >= 0)) err = "Enter the baluster width.";
+    else if (stairs && !(angle >= 0 && angle <= 60)) err = "Enter a stair angle between 0° and 60°.";
+    $("error").hidden = !err; $("error").textContent = err;
+    $("answer").hidden = !!err;
+    if (err) { $("svg").innerHTML = ""; $("tbody").innerHTML = ""; return; }
+
+    const cos = Math.cos(angle * Math.PI / 180);
+    // Balusters stand vertical, so the true (sphere) gap is measured level.
+    const level = stairs && $("measured").value === "rake" ? span * cos : span;
+    const rake = stairs ? level / cos : span;
+    const { n, gap } = solve(level, maxGap, w);
+    const cc = gap + w;
+    const k = stairs ? 1 / cos : 1;              // level -> along-the-rail factor
+
+    if (stairs) {
+      $("gap-label").textContent = "Gap along the rail (for marking)";
+      $("out-gap").innerHTML = `${fmt(gap * k)}<small> mm</small>`;
+      $("out-gap-sub").textContent = `True level gap is ${fmt(gap)} mm (what the 125 mm sphere test sees)`;
+    } else {
+      $("gap-label").textContent = "Gap between balusters";
+      $("out-gap").innerHTML = `${fmt(gap)}<small> mm</small>`;
+      $("out-gap-sub").textContent = "Equal gap at each post and between every baluster";
+    }
+
+    let html = stat("Balusters needed", n, "", true) + stat("Gaps", n + 1, "");
+    if (stairs) {
+      html += stat("Centre to centre on rail", fmt(cc * k), "mm")
+        + stat("Baluster footprint on rail", fmt(w * k), "mm")
+        + stat("Level gap", fmt(gap), "mm")
+        + stat("Rail length / level run", `${fmt(rake, 0)} / ${fmt(level, 0)}`, "mm")
+        + stat("Baluster end cut", fmt(angle), "°");
+    } else {
+      html += stat("Centre to centre", fmt(cc), "mm")
+        + stat("First centre from post", fmt(gap + w / 2), "mm");
+    }
+    $("stats").innerHTML = html;
+
+    // Marking table
+    $("table-hint").textContent = stairs
+      ? "Measured along the rail from the inside face of the lower post. Rounded to the nearest 0.5 mm."
+      : "Measured from the inside face of the left post. Rounded to the nearest 0.5 mm.";
+    let rows = "";
+    for (let i = 0; i < n; i++) {
+      const left = (gap + i * cc) * k;
+      rows += `<tr><td>${i + 1}</td><td>${half(left)}</td><td>${half(left + w * k / 2)}</td><td>${half(left + w * k)}</td></tr>`;
+    }
+    $("tbody").innerHTML = rows || `<tr><td colspan="4">No balusters needed. The span is within the max gap.</td></tr>`;
+
+    const notes = [
+      "Mark from one post using the running totals, not by adding gaps one at a time, so small errors don't build up.",
+      "Check the last gap against the far post before fixing. It should match the gap shown.",
+    ];
+    if (stairs) notes.push("On stairs the balusters stay plumb and are cut at the stair angle top and bottom. Spacing along the rail is longer than the level gap because the rail is sloped.");
+    $("notes").innerHTML = notes.map((t) => `<li>${t}</li>`).join("");
+
+    draw(level, w, gap, n, angle);
+  }
+
+  function draw(level, w, gap, n, angle) {
+    const pad = 40, postW = 26, drawW = 1000 - pad * 2 - postW * 2;
+    const s = drawW / level;
+    const tan = Math.tan(angle * Math.PI / 180);
+    const rise = Math.min(level * tan * s, 900);
+    const sl = level > 0 ? rise / drawW : 0;    // drawn slope (px per px)
+    const balH = 150, top = 20 + rise, H = top + balH + 40;
+    const x0 = pad + postW;                      // inside face of left post
+    const yAt = (x) => top - (x - x0) * sl;      // bottom-rail y at x
+    const css = (v) => `var(${v})`;
+    let g = "";
+    // posts
+    g += `<rect x="${pad}" y="${yAt(x0) - balH - 30}" width="${postW}" height="${balH + 60}" fill="${css("--timber")}"/>`;
+    g += `<rect x="${x0 + drawW}" y="${yAt(x0 + drawW) - balH - 30}" width="${postW}" height="${balH + 60}" fill="${css("--timber")}"/>`;
+    // balusters
+    for (let i = 0; i < n; i++) {
+      const xl = x0 + (gap + i * (gap + w)) * s, xr = xl + w * s;
+      g += `<polygon points="${xl},${yAt(xl) - balH} ${xr},${yAt(xr) - balH} ${xr},${yAt(xr)} ${xl},${yAt(xl)}" fill="${css("--steel")}"/>`;
+    }
+    // rails
+    const xe = x0 + drawW;
+    g += `<line x1="${x0}" y1="${yAt(x0) - balH}" x2="${xe}" y2="${yAt(xe) - balH}" stroke="${css("--ink")}" stroke-width="6"/>`;
+    g += `<line x1="${x0}" y1="${yAt(x0)}" x2="${xe}" y2="${yAt(xe)}" stroke="${css("--ink")}" stroke-width="6"/>`;
+    // first gap dimension
+    if (n > 0) {
+      const xa = x0, xb = x0 + gap * s, yd = yAt(x0) + 24;
+      g += `<line x1="${xa}" y1="${yd}" x2="${xb}" y2="${yd - (xb - xa) * sl}" stroke="${css("--accent")}" stroke-width="2"/>`;
+      g += `<text x="${xb + 6}" y="${yd - (xb - xa) * sl + 5}" fill="${css("--accent")}" font-family="IBM Plex Mono, monospace" font-size="16">${fmt(gap)} level</text>`;
+    }
+    $("svg").setAttribute("viewBox", `0 0 1000 ${Math.ceil(H)}`);
+    $("svg").innerHTML = g;
+  }
+
+  $("mode-level").addEventListener("click", () => setMode("level"));
+  $("mode-stairs").addEventListener("click", () => setMode("stairs"));
+  $("use-angle").addEventListener("click", () => {
+    const r = num("rise"), gi = num("going");
+    if (r > 0 && gi > 0) { $("angle").value = fmt(Math.atan(r / gi) * 180 / Math.PI); update(); }
+  });
+  ids.forEach((k) => $(k).addEventListener("input", update));
+  setMode(mode);
+})();
+</script>
+</body>
+</html>
